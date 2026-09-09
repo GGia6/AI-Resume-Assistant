@@ -1,11 +1,20 @@
 const $ = (selector) => document.querySelector(selector);
 const request = async (url, options) => { const response = await fetch(url, options); const data = await response.json(); if (!response.ok) throw new Error(data.error || "Request failed"); return data; };
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
 const render = async () => {
   const [profile, jobs, applications] = await Promise.all([request("/api/profile"), request("/api/jobs"), request("/api/applications")]);
   $("#profile-output").textContent = profile ? JSON.stringify(profile, null, 2) : "No profile imported yet.";
   if (profile) for (const [key, value] of Object.entries({ fullName: profile.full_name, email: profile.email, location: profile.location, summary: profile.summary })) $(`#profile-form [name="${key}"]`).value = value || "";
   $("#jobs").innerHTML = jobs.map((job) => `<article><strong>${job.title}</strong> ${job.company ? `at ${job.company}` : ""}<br>Fit score: <b>${job.fit_score ?? "—"}/100</b><p>${job.fit_rationale ? JSON.parse(job.fit_rationale).rationale : ""}</p><button data-job="${job.id}">Create application</button></article>`).join("") || "<p>No jobs yet.</p>";
-  $("#applications").innerHTML = applications.map((a) => `<article><strong>${a.title}</strong> at ${a.company || "unknown"} — ${a.status}<br><button data-approve="${a.id}" ${a.approval_at ? "disabled" : ""}>${a.approval_at ? "Approved" : "Approve for safe mock submission"}</button>${a.approval_at && a.status !== "submitted" ? ` <button data-submit="${a.id}">Submit via mock adapter</button>` : ""}</article>`).join("") || "<p>No applications yet.</p>";
+  $("#applications").innerHTML = applications.map((a) => `<article>
+    <strong>${escapeHtml(a.title)}</strong> at ${escapeHtml(a.company || "unknown")} - <b>${escapeHtml(a.status)}</b>
+    <details open><summary>View application</summary>
+      <h4>Cover letter</h4><pre class="cover-letter">${escapeHtml(a.cover_letter || "No cover letter generated.")}</pre>
+      <p><small>Review this content before approving. Approval is required before the safe mock submission button appears.</small></p>
+    </details>
+    <button data-approve="${a.id}" ${a.approval_at ? "disabled" : ""}>${a.approval_at ? "Approved" : "Approve for safe mock submission"}</button>
+    ${a.approval_at && a.status !== "submitted" ? ` <button data-submit="${a.id}">Submit via mock adapter</button>` : ""}
+  </article>`).join("") || "<p>No applications yet.</p>";
 };
 $("#resume-form").addEventListener("submit", async (event) => { event.preventDefault(); const file = $("#resume-file").files[0]; if (!file) return alert("Choose a PDF first."); const form = new FormData(); form.append("resume", file); try { await request("/api/profile/import", { method: "POST", body: form }); await render(); } catch (e) { alert(e.message); } });
 $("#profile-form").addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(event.target)); data.skills = String(data.skills || "").split(",").map((s) => s.trim()).filter(Boolean); try { await request("/api/profile", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); await render(); } catch (e) { alert(e.message); } });
