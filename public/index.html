@@ -1,0 +1,7 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Resume Assistant</title><link rel="stylesheet" href="/styles.css"></head><body>
+<header><h1>Resume Assistant</h1><p>Organize applications with human-controlled, explainable assistance.</p></header>
+<main>
+<section class="card"><h2>Resume profile</h2><form id="resume-form"><input type="file" id="resume-file" accept="application/pdf"><button type="submit">Import PDF</button></form><form id="profile-form"><input name="fullName" placeholder="Full name"><input name="email" placeholder="Email"><input name="location" placeholder="Location"><textarea name="summary" placeholder="Summary"></textarea><input name="skills" placeholder="Skills, comma separated"><button>Save profile</button></form><pre id="profile-output"></pre></section>
+<section class="card"><h2>Add a job</h2><form id="job-form"><input name="title" required placeholder="Job title"><input name="company" placeholder="Company"><input name="location" placeholder="Location"><input name="sourceUrl" type="url" placeholder="Posting URL"><textarea name="description" required minlength="20" placeholder="Paste the job description"></textarea><button>Analyze and save job</button></form></section>
+<section class="card"><h2>Jobs and applications</h2><div id="jobs"></div><h3>Application history</h3><div id="applications"></div></section>
+</main><script type="module" src="/app.js"></script></body></html>
