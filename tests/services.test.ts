@@ -9,6 +9,13 @@ describe("resume assistant services", () => {
     expect(result.score).toBeLessThanOrEqual(100);
     expect(result.rationale).toContain("Matched");
   });
+  it("does not report generic prose as missing skills", () => {
+    const result = analyzeFit("You would enjoy diving into data sets and working with teams", { skills: [] }, []);
+    expect(result.missing).not.toContain("you");
+    expect(result.missing).not.toContain("would");
+    expect(result.missing).not.toContain("enjoy");
+    expect(result.missing).not.toContain("data");
+  });
   it("generates a cover letter from profile and job data", () => {
     expect(generateCoverLetter({ title: "Engineer", company: "Acme" }, { full_name: "Sam", skills: ["React"] })).toContain("Sam");
   });
