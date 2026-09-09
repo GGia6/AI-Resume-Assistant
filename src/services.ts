@@ -32,8 +32,16 @@ export function saveProfile(db: Db, input: any) {
   return profileFromRow(db.prepare("SELECT * FROM resume_profiles WHERE id=?").get(result.lastInsertRowid));
 }
 
+const stopWords = new Set([
+  "a", "about", "across", "after", "all", "and", "are", "as", "at", "be", "been", "being",
+  "by", "can", "could", "data", "for", "from", "get", "getting", "give", "has", "have",
+  "into", "is", "it", "its", "job", "more", "of", "on", "or", "our", "role", "that",
+  "the", "their", "them", "then", "there", "these", "they", "this", "to", "us", "use",
+  "using", "we", "what", "when", "which", "who", "will", "with", "would", "you", "your",
+  "enjoy", "help", "helping", "like", "love", "looking", "work", "working"
+]);
 const terms = (text: string) => [...new Set((text.toLowerCase().match(/[a-z][a-z0-9+#.-]{1,}/g) ?? [])
-  .filter((term) => term.length > 2))];
+  .filter((term) => term.length > 2 && !stopWords.has(term)))];
 
 export function analyzeFit(description: string, profile: any, criteria: any[]) {
   const jobTerms = terms(description);
