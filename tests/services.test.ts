@@ -16,6 +16,15 @@ describe("resume assistant services", () => {
     expect(result.missing).not.toContain("enjoy");
     expect(result.missing).not.toContain("data");
   });
+  it("matches relevant terms from the imported resume text", () => {
+    const result = analyzeFit(
+      "Analytics manager using statistical analysis, Tableau, Python, and communication to derive insights",
+      { source_text: "Bachelor of Science in Statistics. Built dashboards in Tableau and Shiny. Analyzed census data in R and Python. Communicated insights." },
+      []
+    );
+    expect(result.score).toBeGreaterThan(0);
+    expect(result.matched).toEqual(expect.arrayContaining(["analytics", "tableau", "python"]));
+  });
   it("generates a cover letter from profile and job data", () => {
     expect(generateCoverLetter({ title: "Engineer", company: "Acme" }, { full_name: "Sam", skills: ["React"] })).toContain("Sam");
   });
