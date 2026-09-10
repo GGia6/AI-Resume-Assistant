@@ -44,14 +44,38 @@ const terms = (text: string) => [...new Set((text.toLowerCase().match(/[a-z][a-z
   .filter((term) => term.length > 2 && !stopWords.has(term)))];
 
 export function analyzeFit(description: string, profile: any, criteria: any[]) {
-  const jobTerms = terms(description);
-  const skills = new Set((profile?.skills ?? []).map((s: any) => String(typeof s === "string" ? s : s.name).toLowerCase()));
-  const matched = jobTerms.filter((term) => [...skills].some((skill) => skill.includes(term) || term.includes(skill)));
+  const skillAliases: Record<string, string[]> = {
+    analytics: ["analytics", "analytical", "analysis", "analyze", "analyzed", "statistical", "statistics"],
+    communication: ["communication", "communicating", "communicator", "written", "verbal"],
+    insights: ["insight", "insights"],
+    "problem-solving": ["problem-solving", "problem solving", "problem"],
+    "data visualization": ["visualization", "visualizations", "tableau", "shiny"],
+    "data analysis": ["data analysis", "analyzed", "analysis", "data"],
+    "business value": ["business value", "business results", "business growth"],
+    "computer science": ["computer science", "programming", "python", "r programming"],
+    statistics: ["statistics", "statistical", "regression", "ordinal logistic"],
+    "data tools": ["analytics technologies", "tableau", "python", "r", "shiny", "spss", "pandas"]
+  };
+  const resumeText = [
+    profile?.source_text,
+    ...(profile?.skills ?? []).map((s: any) => typeof s === "string" ? s : s.name),
+    profile?.summary,
+    ...(profile?.experience ?? []).flatMap((item: any) => Object.values(item)),
+    ...(profile?.education ?? []).flatMap((item: any) => Object.values(item))
+  ].filter(Boolean).join(" ").toLowerCase();
+  const jobTerms = terms(description).filter((term) => term !== "description");
+  const meaningfulTerms = jobTerms.filter((term) => term.length > 3);
+  const matched = meaningfulTerms.filter((term) => resumeText.includes(term) ||
+    Object.values(skillAliases).some((aliases) => aliases.includes(term) && aliases.some((alias) => resumeText.includes(alias))));
+  const matchedCategories = Object.entries(skillAliases)
+    .filter(([_, aliases]) => aliases.some((alias) => resumeText.includes(alias) && aliases.some((candidate) => description.toLowerCase().includes(candidate))))
+    .map(([category]) => category);
+  const allMatched = [...new Set([...matched, ...matchedCategories])];
   const required = criteria.filter((c) => c.enabled);
   const skillWeight = required.find((c) => c.name === "Required skills")?.weight ?? 5;
-  const score = Math.min(100, Math.round((matched.length / Math.max(1, Math.min(jobTerms.length, 12))) * 100 * Math.min(1.5, skillWeight / 5)));
-  const missing = jobTerms.filter((term) => !matched.includes(term)).slice(0, 8);
-  return { score, rationale: `Matched ${matched.length} relevant profile terms (${matched.slice(0, 8).join(", ") || "none"}).${missing.length ? ` Consider strengthening: ${missing.join(", ")}.` : " Strong keyword alignment."}`, matched, missing };
+  const score = Math.min(100, Math.round((allMatched.length / Math.max(1, Math.min(meaningfulTerms.length, 16))) * 100 * Math.min(1.5, skillWeight / 5)));
+  const missing = meaningfulTerms.filter((term) => !allMatched.includes(term)).slice(0, 8);
+  return { score, rationale: `Matched ${allMatched.length} relevant profile terms (${allMatched.slice(0, 8).join(", ") || "none"}).${missing.length ? ` Consider strengthening: ${missing.join(", ")}.` : " Strong keyword alignment."}`, matched: allMatched, missing };
 }
 
 export function generateCoverLetter(job: any, profile: any) {
